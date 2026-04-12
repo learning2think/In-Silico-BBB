@@ -1,0 +1,37 @@
+# Байт-код Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Виртуальные окружения
+.venv/
+venv/
+env/
+ENV/
+
+# Дистрибутивы и сборки
+dist/
+build/
+*.egg-info/
+
+# Streamlit-кэш
+.streamlit/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Данные и результаты (локальные артефакты)
+results/
+*.csv
+*.xlsx
+*.h5
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
