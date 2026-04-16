@@ -31,24 +31,24 @@
 ```
 ┌────────────────────────────────────────────────────────────┐
 │                     app.py (Streamlit UI)                  │
-│  ┌──────────────┐  ┌─────────────────────┐  ┌──────────┐  │
-│  │  Sidebar     │  │   Results Tab        │  │ Model Tab│  │
-│  │  (параметры) │  │   Graphs + Metrics   │  │ (LaTeX)  │  │
-│  └──────────────┘  └─────────────────────┘  └──────────┘  │
+│  ┌──────────────┐  ┌─────────────────────┐  ┌──────────┐   │
+│  │  Sidebar     │  │   Results Tab        │ │ Model Tab│   │
+│  │  (параметры) │  │   Graphs + Metrics   │ │ (LaTeX)  │   │
+│  └──────────────┘  └─────────────────────┘  └──────────┘   │
 └───────────────────────────┬────────────────────────────────┘
                             │ вызов
 ┌───────────────────────────▼────────────────────────────────┐
 │                   bbb/ (Python package)                    │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │  core/simulator.py   ←→   core/model.py              │  │
-│  │  Класс Simulator           Функция bbb_ode()          │  │
-│  │  SimulationParams          ОДУ (Фик + Михаэлис-Мент.) │  │
-│  │  SimulationResult          LSODA (scipy)              │  │
+│  │  Класс Simulator           Функция bbb_ode()         │  │
+│  │  SimulationParams          ОДУ (Фик + Михаэлис-Мент.)│  │
+│  │  SimulationResult          LSODA (scipy)             │  │
 │  └──────────────────────────────────────────────────────┘  │
 │  ┌──────────────┐   ┌──────────────────────────────────┐   │
-│  │ data/        │   │ visualization/plots.py            │   │
-│  │ substances.py│   │ plot_concentrations()             │   │
-│  │ SUBSTANCES{} │   │ plot_parameter_sensitivity()      │   │
+│  │ data/        │   │ visualization/plots.py           │   │
+│  │ substances.py│   │ plot_concentrations()            │   │
+│  │ SUBSTANCES{} │   │ plot_parameter_sensitivity()     │   │
 │  └──────────────┘   └──────────────────────────────────┘   │
 └────────────────────────────────────────────────────────────┘
 ```

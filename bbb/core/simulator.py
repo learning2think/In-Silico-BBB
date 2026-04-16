@@ -1,20 +1,26 @@
 """
 Модуль simulator — класс Simulator для численного решения ОДУ модели ГЭБ.
 
+Публичный API
+-------------
+  SimulationParams  — датакласс параметров одного запуска.
+  SimulationResult  — датакласс результата (t, c_blood, c_brain, AUC, Cmax).
+  Simulator         — класс с методом run(params) → SimulationResult.
+
 Выбор численного метода
 -----------------------
-Используется метод LSODA (Livermore Solver for Ordinary Differential
-Equations with Automatic method switching). Метод автоматически переключается
-между явными (Adams) и неявными (BDF) схемами в зависимости от жёсткости
-системы в текущей точке. Это особенно важно для модели ГЭБ:
+Используется LSODA (Livermore Solver for Ordinary Differential Equations
+with Automatic method switching) через scipy.integrate.solve_ivp.
 
-  - При высоких концентрациях (или малых Km) P-gp-член может создавать
-    жёсткость системы — неявная схема BDF справляется с этим без потери
-    точности и без чрезмерно малого шага.
-  - В нежёстких участках LSODA переходит на Adams, что даёт скорость
-    явных методов.
-  - Альтернативы: Radau или BDF работали бы не хуже, но LSODA предпочтительней
-    для общего применения, когда жёсткость заранее неизвестна.
+LSODA автоматически переключается между явными (Adams) и неявными (BDF)
+схемами в зависимости от жёсткости системы:
+
+  - При малых значениях Km и высоких концентрациях член Михаэлиса–Ментен
+    может создавать жёсткость → BDF подавляет нестабильность без потери
+    точности.
+  - На нежёстких участках LSODA переходит на Adams (скорость явных методов).
+
+Точность: rtol=1e-8, atol=1e-10 — достаточно для концентраций ~1e-3 мкМ.
 """
 
 from dataclasses import dataclass
@@ -147,25 +153,17 @@ class Simulator:
             Результат интегрирования с временным рядом концентраций
             и производными показателями (AUC, Cmax).
 
-        Исключения
+        Примечание
         ----------
-        RuntimeError
-            Если решатель не смог завершить интегрирование.
+        При неудачном завершении решателя возвращается SimulationResult
+        с ``success=False`` и описанием проблемы в поле ``message``.
+        Исключение не бросается.
         """
         # Временна́я сетка для вывода результата
         t_eval = np.linspace(0.0, params.t_end, params.n_points)
 
         # Начальные условия: [C_blood(0), C_brain(0)]
         y0 = [params.c0_blood, params.c0_brain]
-
-        # Параметры правых частей ОДУ
-        ode_kwargs = dict(
-            k_pass=params.k_pass,
-            vmax=params.vmax,
-            km=params.km,
-            v_blood=params.v_blood,
-            v_brain=params.v_brain,
-        )
 
         # Численное интегрирование методом LSODA
         # (автоматическое переключение Adams/BDF для жёстких и нежёстких участков)
@@ -191,7 +189,8 @@ class Simulator:
         c_brain = sol.y[1]
 
         # Площадь под кривой концентрации в мозге (метод трапеций)
-        auc_brain = float(np.trapz(c_brain, sol.t))
+        # np.trapz удалён в NumPy 2.0, используем np.trapezoid
+        auc_brain = float(np.trapezoid(c_brain, sol.t))
 
         # Максимальная концентрация в мозге
         c_brain_max = float(np.max(c_brain))
