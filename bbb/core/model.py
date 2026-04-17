@@ -39,6 +39,7 @@ def bbb_ode(
     km: float,
     v_blood: float,
     v_brain: float,
+    k_elim: float = 0.0,
 ) -> list[float]:
     """
     Правые части системы ОДУ двухкомпартментной модели ГЭБ.
@@ -60,6 +61,9 @@ def bbb_ode(
         Относительный объём кровяного компартмента [усл. ед.].
     v_brain : float
         Относительный объём мозгового компартмента [усл. ед.].
+    k_elim : float
+        Константа системного клиренса из крови [1/ч] (k_elim = CL / V_blood).
+        При k_elim = 0 модель соответствует закрытой системе (in vitro).
 
     Возвращает
     ----------
@@ -67,19 +71,23 @@ def bbb_ode(
         [dC_blood/dt, dC_brain/dt] — производные концентраций [мкМ/ч].
     """
     c_blood, c_brain = y
+    c_blood_safe = max(c_blood, 0.0)
 
     # Пассивная диффузия (закон Фика): направление кровь → мозг
-    j_diff = k_pass * (c_blood - c_brain)
+    j_diff = k_pass * (c_blood_safe - c_brain)
 
     # Активный эффлюкс P-gp (Михаэлис–Ментен): направление мозг → кровь
     # Защита от отрицательных концентраций (численные артефакты)
     c_brain_safe = max(c_brain, 0.0)
     j_pgp = vmax * c_brain_safe / (km + c_brain_safe)
 
+    # Системный клиренс из крови (печень + почки; 0 в режиме in vitro)
+    j_elim = k_elim * c_blood_safe
+
     # Коэффициент пересчёта объёмов
     volume_ratio = v_brain / v_blood
 
-    dC_blood_dt = -j_diff + volume_ratio * j_pgp
+    dC_blood_dt = -j_diff + volume_ratio * j_pgp - j_elim
     dC_brain_dt = (1.0 / volume_ratio) * j_diff - j_pgp
 
     return [dC_blood_dt, dC_brain_dt]

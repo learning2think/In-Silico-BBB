@@ -67,6 +67,7 @@ class SimulationParams:
     v_blood: float = 1.0
     v_brain: float = 0.3
     n_points: int = 500
+    k_elim: float = 0.0   # системный клиренс из крови [1/ч]; 0 = in vitro
 
 
 @dataclass
@@ -100,6 +101,7 @@ class SimulationResult:
     message: str
     auc_brain: float
     c_brain_max: float
+    t_brain_max: float   # время достижения Cmax в мозге [ч]
 
 
 class Simulator:
@@ -179,6 +181,7 @@ class Simulator:
                 params.km,
                 params.v_blood,
                 params.v_brain,
+                params.k_elim,
             ),
             rtol=self.rtol,
             atol=self.atol,
@@ -192,8 +195,10 @@ class Simulator:
         # np.trapz удалён в NumPy 2.0, используем np.trapezoid
         auc_brain = float(np.trapezoid(c_brain, sol.t))
 
-        # Максимальная концентрация в мозге
-        c_brain_max = float(np.max(c_brain))
+        # Максимальная концентрация в мозге и время её достижения
+        idx_max = int(np.argmax(c_brain))
+        c_brain_max = float(c_brain[idx_max])
+        t_brain_max = float(sol.t[idx_max])
 
         return SimulationResult(
             t=sol.t,
@@ -203,4 +208,5 @@ class Simulator:
             message=sol.message,
             auc_brain=auc_brain,
             c_brain_max=c_brain_max,
+            t_brain_max=t_brain_max,
         )
