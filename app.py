@@ -1,5 +1,5 @@
 """
-app.py — главная точка входа Streamlit-приложения In Silico BBB.
+app.py — точка входа Streamlit-приложения In Silico BBB.
 
 Запуск:
     streamlit run app.py
@@ -16,14 +16,16 @@ app.py — главная точка входа Streamlit-приложения I
 """
 
 import io
+from dataclasses import replace
+from pathlib import Path
+from typing import TypedDict
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
-from dataclasses import replace
 
-from bbb.core.simulator import Simulator, SimulationParams
+from bbb.core.simulator import SimulationParams, SimulationResult, Simulator
 from bbb.data.substances import SUBSTANCES
 from bbb.visualization.plots import (
     plot_concentrations,
@@ -43,156 +45,92 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# Пользовательские стили
+# CSS из assets/theme.css
 # ---------------------------------------------------------------------------
 
-st.markdown(
+
+def _inject_css() -> None:
+    css_path = Path(__file__).parent / "assets" / "theme.css"
+    with css_path.open(encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+
+_inject_css()
+
+# ---------------------------------------------------------------------------
+# Конфиг панели Plotly (глобальный)
+# ---------------------------------------------------------------------------
+
+
+class _ChartConfig(TypedDict):
+    scrollZoom: bool
+    displayModeBar: bool
+    modeBarButtonsToRemove: list[str]
+    displaylogo: bool
+    responsive: bool
+
+
+_CHART_CONFIG: _ChartConfig = {
+    "scrollZoom": True,
+    "displayModeBar": True,
+    "modeBarButtonsToRemove": ["lasso2d", "select2d", "autoScale2d"],
+    "displaylogo": False,
+    "responsive": True,
+}
+
+# ---------------------------------------------------------------------------
+# Кэшированные тяжёлые вычисления
+# ---------------------------------------------------------------------------
+
+
+@st.cache_data
+def _comparison_table(c0_blood: float, t_end_h: float, k_elim: float) -> pd.DataFrame:
     """
-    <style>
-    /* ── App background ──────────────────────────────────────────── */
-    .stApp { background-color: #ECF1FA; }
+    Запустить симуляцию для всех 7 веществ при одинаковых условиях.
 
-    /* ── Sidebar — deep navy ─────────────────────────────────────── */
-    section[data-testid="stSidebar"] > div:first-child {
-        background: linear-gradient(180deg, #1A2B4A 0%, #162340 100%);
-        border-right: 1px solid #2A3F61;
-    }
-    section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
-        color: #B8CCE0 !important;
-        font-size: 0.85rem !important;
-    }
-    section[data-testid="stSidebar"] hr {
-        border-color: #2A3F61 !important;
-        opacity: 1 !important;
-    }
+    Кэшируется по (c0_blood, t_end_h, k_elim). При изменении любого из трёх
+    параметров кэш сбрасывается и таблица пересчитывается заново.
+    """
+    sim = Simulator()
+    rows = []
+    for sname, sub in SUBSTANCES.items():
+        p = SimulationParams(
+            k_pass=sub.k_pass,
+            vmax=sub.vmax,
+            km=sub.km,
+            c0_blood=c0_blood,
+            t_end=t_end_h,
+            v_blood=1.0,
+            v_brain=0.3,
+            n_points=300,
+            k_elim=k_elim,
+        )
+        r = sim.run(p)
+        if r.success:
+            n_tail = max(int(len(r.t) * 0.05), 1)
+            kp = (r.c_brain[-n_tail:].mean() * sub.fu_brain) / max(
+                r.c_blood[-n_tail:].mean() * sub.fu_plasma, 1e-12
+            )
+            rows.append(
+                {
+                    "Вещество": sname,
+                    "Cmax мозг [мкМ]": f"{r.c_brain_max:.4f}",
+                    "AUC мозг [мкМ·ч]": f"{r.auc_brain:.2f}",
+                    "Kp,uu": f"{kp:.3f}",
+                    "t(Cmax) [ч]": f"{r.t_brain_max:.1f}",
+                }
+            )
+    df = pd.DataFrame(rows)
+    return df.sort_values("Kp,uu", ascending=False).reset_index(drop=True)
 
-    /* ── Metric cards ────────────────────────────────────────────── */
-    [data-testid="stMetric"] {
-        background: #FFFFFF;
-        border: 1px solid #C7D8F0;
-        border-top: 3px solid #2563EB;
-        border-radius: 12px;
-        padding: 1rem 1.25rem;
-        box-shadow: 0 3px 14px rgba(37, 99, 235, 0.11);
-    }
-    [data-testid="stMetricLabel"] > div {
-        color: #374151 !important;
-        font-weight: 600 !important;
-        font-size: 0.85rem !important;
-    }
-    [data-testid="stMetricValue"] > div {
-        color: #1A2B4A !important;
-        font-weight: 700 !important;
-    }
-
-    /* ── Tabs ────────────────────────────────────────────────────── */
-    .stTabs [data-baseweb="tab-list"] {
-        background: #FFFFFF;
-        border-radius: 10px;
-        padding: 4px;
-        gap: 2px;
-        border: 1px solid #C7D8F0;
-        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.07);
-        margin-bottom: 0.6rem;
-    }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 7px;
-        color: #374151 !important;
-        font-weight: 500;
-        padding: 0.4rem 1rem;
-    }
-    .stTabs [aria-selected="true"][data-baseweb="tab"] {
-        background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
-        color: white !important;
-        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.30) !important;
-    }
-
-    /* ── Primary buttons ─────────────────────────────────────────── */
-    [data-testid="baseButton-primary"] {
-        background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
-        border: none !important;
-        box-shadow: 0 3px 12px rgba(37, 99, 235, 0.38) !important;
-        font-weight: 600 !important;
-        border-radius: 8px !important;
-        letter-spacing: 0.02em !important;
-    }
-    [data-testid="baseButton-primary"]:hover {
-        box-shadow: 0 5px 18px rgba(37, 99, 235, 0.55) !important;
-        transform: translateY(-1px) !important;
-    }
-
-    /* ── Tab panel — white card ─────────────────────────────────── */
-    [role="tabpanel"] {
-        background: #FFFFFF;
-        border-radius: 0 0 12px 12px;
-        padding: 1.4rem 1.6rem 0.8rem;
-        border: 1px solid #C7D8F0;
-        border-top: none;
-        margin-top: -3px;
-    }
-
-    /* ── Markdown text — main content ────────────────────────────── */
-    [data-testid="stMarkdownContainer"] p,
-    [data-testid="stMarkdownContainer"] li {
-        color: #1E293B;
-    }
-    [data-testid="stMarkdownContainer"] td,
-    [data-testid="stMarkdownContainer"] th {
-        color: #1E293B !important;
-    }
-    [data-testid="stMarkdownContainer"] th {
-        background: #EEF2FF !important;
-        font-weight: 600 !important;
-    }
-    [data-testid="stMarkdownContainer"] h2,
-    [data-testid="stMarkdownContainer"] h3,
-    [data-testid="stMarkdownContainer"] h4 {
-        color: #1A2B4A;
-    }
-    [data-testid="stMarkdownContainer"] strong {
-        color: #1A2B4A;
-    }
-    [data-testid="stMarkdownContainer"] code {
-        color: #1D4ED8;
-        background: #EEF2FF;
-        padding: 0.1em 0.35em;
-        border-radius: 4px;
-    }
-
-    /* KaTeX math — dark text ────────────────────────────────────── */
-    .katex { color: #1E293B !important; }
-
-    /* ── Sidebar — restore light text (overrides global rules) ───── */
-    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-        color: #D1DCE8 !important;
-    }
-    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] strong {
-        color: #F0F6FF !important;
-    }
-
-    /* ── Alert/info boxes ────────────────────────────────────────── */
-    [data-testid="stAlertContainer"] p {
-        color: #1E293B !important;
-    }
-
-    /* ── Caption ─────────────────────────────────────────────────── */
-    [data-testid="stCaptionContainer"] p {
-        color: #4B5563 !important;
-    }
-
-    /* ── Footer ──────────────────────────────────────────────────── */
-    footer { visibility: hidden; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 # ---------------------------------------------------------------------------
 # Вспомогательные функции
 # ---------------------------------------------------------------------------
 
+
 def _build_csv(
-    result,
+    result: SimulationResult,
     params: SimulationParams,
     substance_name: str,
     kp_uu: float,
@@ -202,16 +140,13 @@ def _build_csv(
     BOM (\ufeff) обеспечивает корректное открытие в Excel без перекодировки.
     """
     import textwrap
+
     ratio = np.where(
         result.c_blood > 1e-12,
         result.c_brain / result.c_blood,
         np.nan,
     )
-    kp_level = (
-        "Высокая" if kp_uu >= 0.8
-        else "Умеренная" if kp_uu >= 0.3
-        else "Низкая"
-    )
+    kp_level = "Высокая" if kp_uu >= 0.8 else "Умеренная" if kp_uu >= 0.3 else "Низкая"
     header = textwrap.dedent(f"""\
         # ============================================================
         # In Silico BBB — результаты симуляции транспорта через ГЭБ
@@ -234,12 +169,14 @@ def _build_csv(
         # ============================================================
         #
     """)
-    df = pd.DataFrame({
-        "t [ч]":                  np.round(result.t, 4),
-        "C_blood [мкМ]":          np.round(result.c_blood, 6),
-        "C_brain [мкМ]":          np.round(result.c_brain, 6),
-        "C_brain / C_blood":      np.round(ratio, 4),
-    })
+    df = pd.DataFrame(
+        {
+            "t [ч]": np.round(result.t, 4),
+            "C_blood [мкМ]": np.round(result.c_blood, 6),
+            "C_brain [мкМ]": np.round(result.c_brain, 6),
+            "C_brain / C_blood": np.round(ratio, 4),
+        }
+    )
     csv_body = df.to_csv(index=False)
     return ("\ufeff" + header + csv_body).encode("utf-8")
 
@@ -260,11 +197,11 @@ def _render_conclusion(
       - Kp,uu < 0.3 → низкая проницаемость
     """
     if kp_uu >= 0.8:
-        level        = "🟢 Высокая проницаемость"
+        level = "🟢 Высокая проницаемость"
         border_color = "#16A34A"
-        bg_gradient  = "linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)"
+        bg_gradient = "linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)"
         shadow_color = "rgba(22, 163, 74, 0.15)"
-        pgp_note     = "P-gp эффлюкс минимален или отсутствует."
+        pgp_note = "P-gp эффлюкс минимален или отсутствует."
         verdict = (
             "Вещество свободно проникает через ГЭБ — концентрации "
             "в мозге и крови близки к равновесию. "
@@ -272,11 +209,11 @@ def _render_conclusion(
             "Ожидается хорошая ЦНС-активность при терапевтических дозах."
         )
     elif kp_uu >= 0.3:
-        level        = "🟡 Умеренная проницаемость"
+        level = "🟡 Умеренная проницаемость"
         border_color = "#EA580C"
-        bg_gradient  = "linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)"
+        bg_gradient = "linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)"
         shadow_color = "rgba(234, 88, 12, 0.15)"
-        pgp_note     = "P-gp эффлюкс частично ограничивает накопление."
+        pgp_note = "P-gp эффлюкс частично ограничивает накопление."
         verdict = (
             "Вещество проникает через ГЭБ с ограничениями. "
             "Умеренный P-gp эффлюкс снижает равновесное накопление в мозге. "
@@ -284,11 +221,11 @@ def _render_conclusion(
             "Ингибирование P-gp может существенно повысить экспозицию."
         )
     else:
-        level        = "🔴 Низкая проницаемость"
+        level = "🔴 Низкая проницаемость"
         border_color = "#DC2626"
-        bg_gradient  = "linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%)"
+        bg_gradient = "linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%)"
         shadow_color = "rgba(220, 38, 38, 0.15)"
-        pgp_note     = "Выраженный P-gp эффлюкс и/или барьерный эффект."
+        pgp_note = "Выраженный P-gp эффлюкс и/или барьерный эффект."
         verdict = (
             "Вещество практически не проникает через ГЭБ. "
             "Выраженный P-gp эффлюкс и/или низкая пассивная проницаемость "
@@ -312,11 +249,9 @@ def _render_conclusion(
             height: 100%;
             box-sizing: border-box;
         ">
-          <!-- Заголовок уровня -->
           <div style="font-size:1rem; font-weight:700; color:#1A2B4A;
                       margin-bottom:0.55rem">{level}</div>
 
-          <!-- Ключевые метрики в сетке 2×2 -->
           <div style="display:grid; grid-template-columns:1fr 1fr;
                       gap:0.35rem 0.8rem; margin-bottom:0.6rem">
             <div style="background:rgba(255,255,255,0.65); border-radius:7px;
@@ -345,7 +280,6 @@ def _render_conclusion(
             </div>
           </div>
 
-          <!-- Параметры модели в одну строку -->
           <div style="font-size:0.76rem; color:#6B7280; margin-bottom:0.55rem;
                       background:rgba(255,255,255,0.5); border-radius:7px;
                       padding:0.25rem 0.55rem; line-height:1.7">
@@ -356,7 +290,6 @@ def _render_conclusion(
             {("&ensp;·&ensp;" + pgp_sat) if pgp_sat else ""}
           </div>
 
-          <!-- Вывод -->
           <div style="border-top:1px solid rgba(0,0,0,0.09);
                       padding-top:0.5rem; color:#1A202C;
                       font-size:0.82rem; line-height:1.55">
@@ -372,7 +305,7 @@ def _render_conclusion(
 
 
 # ---------------------------------------------------------------------------
-# Заголовок — Hero-баннер
+# Hero-баннер
 # ---------------------------------------------------------------------------
 
 st.markdown(
@@ -422,7 +355,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # --- Выбор вещества ---
     st.markdown("**Вещество**")
     substance_names = list(SUBSTANCES.keys())
     selected_name = st.selectbox(
@@ -441,14 +373,15 @@ with st.sidebar:
 
     st.divider()
 
-    # --- Параметры транспорта ---
     st.markdown("**Параметры транспорта**")
 
     k_pass = st.slider(
         "k_pass — пассивная проницаемость [1/ч]",
-        min_value=0.001, max_value=2.0,
+        min_value=0.001,
+        max_value=2.0,
         value=float(substance.k_pass),
-        step=0.001, format="%.3f",
+        step=0.001,
+        format="%.3f",
         help=(
             "Коэффициент пассивной диффузии через мембрану ГЭБ. "
             "Высокие значения характерны для липофильных молекул."
@@ -457,9 +390,11 @@ with st.sidebar:
 
     vmax = st.slider(
         "Vmax — максимальная скорость P-gp [мкМ/ч]",
-        min_value=0.0, max_value=10.0,
+        min_value=0.0,
+        max_value=10.0,
         value=float(substance.vmax),
-        step=0.05, format="%.2f",
+        step=0.05,
+        format="%.2f",
         help=(
             "Максимальная скорость эффлюкса P-гликопротеина. "
             "0 = вещество не является субстратом P-gp."
@@ -468,9 +403,11 @@ with st.sidebar:
 
     km = st.slider(
         "Km — константа Михаэлиса [мкМ]",
-        min_value=0.1, max_value=100.0,
+        min_value=0.1,
+        max_value=100.0,
         value=float(substance.km),
-        step=0.1, format="%.1f",
+        step=0.1,
+        format="%.1f",
         help=(
             "Концентрация в мозге, при которой скорость P-gp = Vmax/2. "
             "Малые Km означают высокое сродство транспортёра."
@@ -479,31 +416,38 @@ with st.sidebar:
 
     st.divider()
 
-    # --- Начальные условия и системный клиренс ---
     st.markdown("**Начальные условия**")
 
     c0_blood = st.number_input(
         "C₀ в крови [мкМ]",
-        min_value=0.01, max_value=100.0,
-        value=1.0, step=0.1, format="%.2f",
+        min_value=0.01,
+        max_value=100.0,
+        value=1.0,
+        step=0.1,
+        format="%.2f",
         help="Начальная концентрация вещества в кровяном компартменте.",
     )
 
     t_end = st.slider(
         "Время симуляции [ч]",
-        min_value=1, max_value=72, value=24, step=1,
+        min_value=1,
+        max_value=72,
+        value=24,
+        step=1,
         help="Длительность моделирования.",
     )
 
     st.divider()
 
-    # --- Системный клиренс (in vivo режим) ---
     st.markdown("**Фармакокинетика крови**")
 
     k_elim = st.slider(
         "k_elim — системный клиренс [1/ч]",
-        min_value=0.0, max_value=2.0,
-        value=0.0, step=0.01, format="%.2f",
+        min_value=0.0,
+        max_value=2.0,
+        value=0.0,
+        step=0.01,
+        format="%.2f",
         help=(
             "Константа элиминации из крови (k_elim = CL / V_blood): "
             "моделирует печёночный и почечный клиренс. "
@@ -513,7 +457,6 @@ with st.sidebar:
 
     st.divider()
 
-    # --- Поправка на связывание с белками ---
     with st.expander("🔗 Связывание с белками (fu)"):
         st.caption(
             "Свободные (несвязанные) фракции для расчёта истинного Kp,uu. "
@@ -521,16 +464,20 @@ with st.sidebar:
         )
         fu_plasma = st.slider(
             "fu_plasma — своб. фракция в плазме",
-            min_value=0.01, max_value=1.0,
+            min_value=0.01,
+            max_value=1.0,
             value=float(substance.fu_plasma),
-            step=0.01, format="%.2f",
+            step=0.01,
+            format="%.2f",
             help="Доля несвязанного вещества в плазме крови (1.0 = нет связывания).",
         )
         fu_brain = st.slider(
             "fu_brain — своб. фракция в мозге",
-            min_value=0.01, max_value=1.0,
+            min_value=0.01,
+            max_value=1.0,
             value=float(substance.fu_brain),
-            step=0.01, format="%.2f",
+            step=0.01,
+            format="%.2f",
             help="Доля несвязанного вещества в ткани мозга (1.0 = нет связывания).",
         )
 
@@ -571,17 +518,17 @@ with tab_results:
                 simulator = Simulator()
                 result = simulator.run(params)
 
-            st.session_state["last_result"]    = result
-            st.session_state["last_params"]    = params
+            st.session_state["last_result"] = result
+            st.session_state["last_params"] = params
             st.session_state["last_substance"] = selected_name
             st.session_state["last_fu_plasma"] = fu_plasma
-            st.session_state["last_fu_brain"]  = fu_brain
+            st.session_state["last_fu_brain"] = fu_brain
 
-        result              = st.session_state["last_result"]
-        params              = st.session_state["last_params"]
+        result = st.session_state["last_result"]
+        params = st.session_state["last_params"]
         substance_name_used = st.session_state.get("last_substance", selected_name)
-        _fu_plasma          = st.session_state.get("last_fu_plasma", fu_plasma)
-        _fu_brain           = st.session_state.get("last_fu_brain",  fu_brain)
+        _fu_plasma = st.session_state.get("last_fu_plasma", fu_plasma)
+        _fu_brain = st.session_state.get("last_fu_brain", fu_brain)
 
         if not result.success:
             st.error(f"Решатель завершился с ошибкой: {result.message}")
@@ -590,10 +537,7 @@ with tab_results:
             n_tail = max(int(len(result.t) * 0.05), 1)
             c_blood_tail = result.c_blood[-n_tail:].mean()
             c_brain_tail = result.c_brain[-n_tail:].mean()
-            # Kp,uu с поправкой на несвязанные фракции (истинное равновесие)
-            kp_uu = (c_brain_tail * _fu_brain) / max(
-                c_blood_tail * _fu_plasma, 1e-12
-            )
+            kp_uu = (c_brain_tail * _fu_brain) / max(c_blood_tail * _fu_plasma, 1e-12)
 
             col1, col2, col3, col4 = st.columns(4)
             col1.metric(
@@ -628,12 +572,9 @@ with tab_results:
             fig_interactive = plot_concentrations_interactive(
                 result=result,
                 substance_name=substance_name_used,
-                blood_color="#DC2626",
-                brain_color="#2563EB",
                 show_auc=True,
             )
-            # matplotlib fig used only for PNG export
-            fig = plot_concentrations(
+            fig_png = plot_concentrations(
                 result=result,
                 substance_name=substance_name_used,
                 blood_color="#DC2626",
@@ -644,8 +585,11 @@ with tab_results:
             col_plot, col_conc = st.columns([3, 2], gap="medium")
 
             with col_plot:
-                st.plotly_chart(fig_interactive, width="stretch")
-                # Кнопки экспорта под графиком
+                st.plotly_chart(
+                    fig_interactive,
+                    width="stretch",
+                    config=_CHART_CONFIG,
+                )
                 exp_c1, exp_c2 = st.columns(2)
                 with exp_c1:
                     st.download_button(
@@ -657,7 +601,9 @@ with tab_results:
                     )
                 with exp_c2:
                     _png_buf = io.BytesIO()
-                    fig.savefig(_png_buf, format="png", dpi=150, bbox_inches="tight")
+                    fig_png.savefig(
+                        _png_buf, format="png", dpi=150, bbox_inches="tight"
+                    )
                     _png_buf.seek(0)
                     st.download_button(
                         label="🖼 PNG",
@@ -681,7 +627,7 @@ with tab_results:
                     params,
                 )
 
-            plt.close(fig)
+            plt.close(fig_png)
 
             # --- Сравнение всех веществ ---
             with st.expander("📊 Сравнить все вещества при текущих условиях"):
@@ -690,31 +636,13 @@ with tab_results:
                     f"транспорта, но при C₀ = {c0_blood:.2f} мкМ, "
                     f"t = {t_end} ч, k_elim = {k_elim:.2f} 1/ч."
                 )
-                _cmp_sim = Simulator()
-                _cmp_rows = []
-                for _sname, _sub in SUBSTANCES.items():
-                    _p = SimulationParams(
-                        k_pass=_sub.k_pass, vmax=_sub.vmax, km=_sub.km,
-                        c0_blood=c0_blood, t_end=float(t_end),
-                        v_blood=1.0, v_brain=0.3, n_points=300,
+                with st.spinner("Пересчёт таблицы сравнения..."):
+                    df_cmp = _comparison_table(
+                        c0_blood=c0_blood,
+                        t_end_h=float(t_end),
                         k_elim=k_elim,
                     )
-                    _r = _cmp_sim.run(_p)
-                    if _r.success:
-                        _nt = max(int(len(_r.t) * 0.05), 1)
-                        _kp = (_r.c_brain[-_nt:].mean() * _sub.fu_brain) / max(
-                            _r.c_blood[-_nt:].mean() * _sub.fu_plasma, 1e-12
-                        )
-                        _cmp_rows.append({
-                            "Вещество": _sname,
-                            "Cmax мозг [мкМ]": f"{_r.c_brain_max:.4f}",
-                            "AUC мозг [мкМ·ч]": f"{_r.auc_brain:.2f}",
-                            "Kp,uu": f"{_kp:.3f}",
-                            "t(Cmax) [ч]": f"{_r.t_brain_max:.1f}",
-                        })
-                _df_cmp = pd.DataFrame(_cmp_rows)
-                _df_cmp = _df_cmp.sort_values("Kp,uu", ascending=False).reset_index(drop=True)
-                st.dataframe(_df_cmp, width="stretch", hide_index=True)
+                st.dataframe(df_cmp, width="stretch", hide_index=True)
 
     else:
         st.markdown(
@@ -754,6 +682,7 @@ with tab_results:
 
 # ---- Вкладка «Чувствительность» ------------------------------------------
 
+
 @st.fragment
 def _sensitivity_tab() -> None:
     st.markdown("#### Анализ чувствительности параметров модели")
@@ -784,42 +713,59 @@ def _sensitivity_tab() -> None:
         sv_n = st.slider("Число кривых", 3, 9, 5, key="sv_n")
 
     _sv_map = {
-        "k_pass [1/ч]": ("k_pass", "1/ч",   sv_sub.k_pass, 0.001, 2.0),
-        "Vmax [мкМ/ч]": ("vmax",   "мкМ/ч", sv_sub.vmax,   0.0,   10.0),
-        "Km [мкМ]":     ("km",     "мкМ",   sv_sub.km,     0.1,   100.0),
+        "k_pass [1/ч]": ("k_pass", "1/ч", sv_sub.k_pass, 0.001, 2.0),
+        "Vmax [мкМ/ч]": ("vmax", "мкМ/ч", sv_sub.vmax, 0.0, 10.0),
+        "Km [мкМ]": ("km", "мкМ", sv_sub.km, 0.1, 100.0),
     }
     sv_field, sv_unit, sv_base, sv_min_abs, sv_max_abs = _sv_map[sv_param_label]
 
-    sv_def_min = float(round(max(sv_base * 0.1, sv_min_abs), 4)) if sv_base > 0 else sv_min_abs
-    sv_def_max = float(round(min(sv_base * 5.0, sv_max_abs), 4)) if sv_base > 0 else sv_max_abs * 0.3
+    sv_def_min = (
+        float(round(max(sv_base * 0.1, sv_min_abs), 4)) if sv_base > 0 else sv_min_abs
+    )
+    sv_def_max = (
+        float(round(min(sv_base * 5.0, sv_max_abs), 4))
+        if sv_base > 0
+        else sv_max_abs * 0.3
+    )
 
     sv_r1, sv_r2, sv_r3, sv_r4 = st.columns(4)
     with sv_r1:
         sv_min = st.number_input(
-            f"Мин. {sv_unit}", value=sv_def_min,
-            min_value=sv_min_abs, max_value=sv_max_abs,
-            format="%.4f", key="sv_min",
+            f"Мин. {sv_unit}",
+            value=sv_def_min,
+            min_value=sv_min_abs,
+            max_value=sv_max_abs,
+            format="%.4f",
+            key="sv_min",
         )
     with sv_r2:
         sv_max_val = st.number_input(
-            f"Макс. {sv_unit}", value=sv_def_max,
-            min_value=sv_min_abs, max_value=sv_max_abs,
-            format="%.4f", key="sv_max",
+            f"Макс. {sv_unit}",
+            value=sv_def_max,
+            min_value=sv_min_abs,
+            max_value=sv_max_abs,
+            format="%.4f",
+            key="sv_max",
         )
     with sv_r3:
         sv_c0 = st.number_input(
-            "C₀ в крови [мкМ]", value=1.0,
-            min_value=0.01, max_value=100.0, format="%.2f", key="sv_c0",
+            "C₀ в крови [мкМ]",
+            value=1.0,
+            min_value=0.01,
+            max_value=100.0,
+            format="%.2f",
+            key="sv_c0",
         )
     with sv_r4:
         sv_tend = st.slider("Время [ч]", 1, 72, 24, key="sv_tend")
 
     run_sv = st.button(
         "▶ Запустить анализ чувствительности",
-        type="primary", width="stretch", key="btn_sv",
+        type="primary",
+        width="stretch",
+        key="btn_sv",
     )
 
-    # Зона результатов — всегда занимает место, чтобы избежать прыжка страницы
     results_area = st.container()
 
     if run_sv:
@@ -835,8 +781,8 @@ def _sensitivity_tab() -> None:
             n_points=400,
         )
         sv_simulator = Simulator()
-        sv_results   = []
-        sv_progress  = st.progress(0, text="Запуск симуляций...")
+        sv_results = []
+        sv_progress = st.progress(0, text="Запуск симуляций...")
         for i, val in enumerate(sv_values):
             sv_p = replace(sv_base_params, **{sv_field: val})
             sv_results.append(sv_simulator.run(sv_p))
@@ -846,11 +792,11 @@ def _sensitivity_tab() -> None:
             )
         sv_progress.empty()
 
-        st.session_state["sv_results"]     = sv_results
-        st.session_state["sv_values"]      = sv_values
-        st.session_state["sv_field"]       = sv_field
-        st.session_state["sv_unit"]        = sv_unit
-        st.session_state["sv_sub_name"]    = sv_substance_name
+        st.session_state["sv_results"] = sv_results
+        st.session_state["sv_values"] = sv_values
+        st.session_state["sv_field"] = sv_field
+        st.session_state["sv_unit"] = sv_unit
+        st.session_state["sv_sub_name"] = sv_substance_name
         st.session_state["sv_compartment"] = sv_compartment
 
     with results_area:
@@ -865,23 +811,25 @@ def _sensitivity_tab() -> None:
                 substance_name=st.session_state["sv_sub_name"],
                 compartment=_sv_comp_arg,
             )
-            st.plotly_chart(fig_sv, width="stretch")
+            st.plotly_chart(fig_sv, width="stretch", config=_CHART_CONFIG)
 
             sv_rows = []
             for val, res in zip(
-                st.session_state["sv_values"], st.session_state["sv_results"]
+                st.session_state["sv_values"],
+                st.session_state["sv_results"],
+                strict=False,
             ):
                 n_t = max(int(len(res.t) * 0.05), 1)
-                kp  = res.c_brain[-n_t:].mean() / max(
-                    res.c_blood[-n_t:].mean(), 1e-12
+                kp = res.c_brain[-n_t:].mean() / max(res.c_blood[-n_t:].mean(), 1e-12)
+                sv_rows.append(
+                    {
+                        f"{st.session_state['sv_field']}"
+                        f" [{st.session_state['sv_unit']}]": f"{val:.4g}",
+                        "Cmax мозг [мкМ]": f"{res.c_brain_max:.4f}",
+                        "AUC мозг [мкМ·ч]": f"{res.auc_brain:.2f}",
+                        "Kp,uu": f"{kp:.3f}",
+                    }
                 )
-                sv_rows.append({
-                    f"{st.session_state['sv_field']}"
-                    f" [{st.session_state['sv_unit']}]": f"{val:.4g}",
-                    "Cmax мозг [мкМ]":   f"{res.c_brain_max:.4f}",
-                    "AUC мозг [мкМ·ч]":  f"{res.auc_brain:.2f}",
-                    "Kp,uu":             f"{kp:.3f}",
-                })
             st.dataframe(pd.DataFrame(sv_rows), width="stretch", hide_index=True)
         else:
             st.info(
@@ -1022,11 +970,12 @@ with tab_about:
 
             | Слой | Технология |
             |---|---|
-            | UI | Streamlit 1.56 |
+            | UI | Streamlit |
             | ОДУ-решатель | scipy LSODA |
-            | Графики | matplotlib 3.10 |
+            | Интерактивные графики | Plotly |
+            | Статичные графики | matplotlib |
             | Данные | numpy · pandas |
-            | Тесты | pytest 9 |
+            | Тесты | pytest |
             | Python | 3.13 |
             """
         )
@@ -1041,7 +990,7 @@ st.markdown(
     <p style="text-align:center; color:#6B7280; font-size:0.8rem;
               margin-bottom:0.6rem; line-height:1.8">
       In Silico BBB &nbsp;·&nbsp; Проект УМНИК &nbsp;·&nbsp;
-      Python 3.13 · scipy LSODA · Streamlit
+      Python 3.13 · scipy LSODA · Plotly · Streamlit
     </p>
     """,
     unsafe_allow_html=True,

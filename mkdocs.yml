@@ -1,0 +1,54 @@
+site_name: BBB Visualizer
+site_description: "Blood-Brain Barrier concentration visualizer — two-compartment mechanistic simulator"
+site_url: https://learning2think.github.io/In-Silico-BBB
+repo_url: https://github.com/learning2think/In-Silico-BBB
+repo_name: learning2think/In-Silico-BBB
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            members_order: source
+
+nav:
+  - Home: index.md
+  - User Guide:
+    - Quickstart: guide/quickstart.md
+    - Parameters: guide/parameters.md
+    - Interpreting Charts: guide/charts.md
+  - API Reference:
+    - Model: api/model.md
+    - Simulator: api/simulator.md
+    - Plots: api/plots.md
+    - Substances: api/substances.md
+  - Development:
+    - Contributing: dev/contributing.md
+    - Changelog: dev/changelog.md

@@ -67,7 +67,7 @@ class SimulationParams:
     v_blood: float = 1.0
     v_brain: float = 0.3
     n_points: int = 500
-    k_elim: float = 0.0   # системный клиренс из крови [1/ч]; 0 = in vitro
+    k_elim: float = 0.0  # системный клиренс из крови [1/ч]; 0 = in vitro
 
 
 @dataclass
@@ -101,7 +101,7 @@ class SimulationResult:
     message: str
     auc_brain: float
     c_brain_max: float
-    t_brain_max: float   # время достижения Cmax в мозге [ч]
+    t_brain_max: float  # время достижения Cmax в мозге [ч]
 
 
 class Simulator:

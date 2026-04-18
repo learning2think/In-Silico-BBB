@@ -4,15 +4,25 @@
 
 **Mechanistic two-compartment simulator of blood–brain barrier drug transport**
 
-[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.56-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![CI](https://github.com/learning2think/In-Silico-BBB/actions/workflows/ci.yml/badge.svg)](https://github.com/learning2think/In-Silico-BBB/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/learning2think/In-Silico-BBB/badge.svg)](https://codecov.io/gh/learning2think/In-Silico-BBB)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.35%2B-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Plotly](https://img.shields.io/badge/Plotly-5.22%2B-3F4F75?logo=plotly&logoColor=white)](https://plotly.com/)
 [![Tests](https://img.shields.io/badge/tests-17%20passed-2ea44f?logo=pytest&logoColor=white)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![UMNIK](https://img.shields.io/badge/Funded%20by-UMNIK%20Innovation%20Fund-F97316)](https://fasie.ru/)
+[![Docs](https://img.shields.io/badge/docs-mkdocs-blue)](https://learning2think.github.io/In-Silico-BBB)
 
 [🇬🇧 English](#-english) · [🇷🇺 Русский](#-русский)
 
 </div>
+
+> **Screenshot / GIF**
+> *Add a screenshot or screen recording here:*
+> `docs/screenshot.png` — run `streamlit run app.py`, capture the Results tab, save to `docs/`
+> Then replace this block with: `![App screenshot](docs/screenshot.png)`
 
 ---
 
@@ -37,11 +47,24 @@ The blood–brain barrier (BBB) is a highly selective physiological interface be
 | **Protein binding correction** | fu_plasma and fu_brain sliders; true unbound Kp,uu = (C_brain·fu_brain)/(C_blood·fu_plasma) |
 | **Systemic clearance** | k_elim parameter switches model from closed in vitro to open in vivo mode |
 | **Sensitivity analysis** | Fan plots for k_pass, Vmax, or Km with compartment selector |
-| **Compound comparison** | Ranking table for all 7 built-in substances under identical conditions |
+| **Compound comparison** | Cached ranking table for all 7 built-in substances under identical conditions |
 | **Export** | CSV with metadata header + PNG plot (150 dpi) |
 | **Substance registry** | 7 compounds with literature-verified parameters and protein binding values |
-| **Interactive UI** | Streamlit app — no programming required |
+| **Interactive UI** | Streamlit + Plotly — no programming required |
 | **Test suite** | 17 pytest tests covering mass conservation, P-gp physics, and all substances |
+
+---
+
+### Quick Start
+
+```bash
+git clone https://github.com/learning2think/In-Silico-BBB.git
+cd In-Silico-BBB
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+The browser opens automatically at `http://localhost:8501`.
 
 ---
 
@@ -102,6 +125,13 @@ Tolerances: `atol = 1e-10`, `rtol = 1e-8`.
 ```
 In-Silico-BBB/
 │
+├── app.py                        # Streamlit entry point
+├── requirements.txt
+├── README.md
+│
+├── assets/
+│   └── theme.css                 # Design tokens + component styles (auto-loaded)
+│
 ├── bbb/                          # Core Python package
 │   ├── core/
 │   │   ├── model.py              # ODE right-hand sides (bbb_ode)
@@ -109,14 +139,10 @@ In-Silico-BBB/
 │   ├── data/
 │   │   └── substances.py         # Substance dataclass + SUBSTANCES registry (7 compounds)
 │   └── visualization/
-│       └── plots.py              # plot_concentrations() · plot_parameter_sensitivity()
+│       └── plots.py              # Matplotlib (PNG export) + Plotly (interactive UI)
 │
-├── tests/
-│   └── test_simulator.py         # 17 pytest tests
-│
-├── app.py                        # Streamlit entry point
-├── requirements.txt
-└── README.md
+└── tests/
+    └── test_simulator.py         # 17 pytest tests
 ```
 
 ---
@@ -127,7 +153,7 @@ In-Silico-BBB/
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/<your-username>/In-Silico-BBB.git
+git clone https://github.com/learning2think/In-Silico-BBB.git
 cd In-Silico-BBB
 
 # 2. Create and activate a virtual environment
@@ -141,8 +167,6 @@ pip install -r requirements.txt
 # 4. Launch the app
 streamlit run app.py
 ```
-
-The browser will open automatically at `http://localhost:8501`.
 
 ---
 
@@ -199,6 +223,16 @@ SUBSTANCES["MyCompound"] = Substance(
 
 ---
 
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Add tests for new functionality in `tests/test_simulator.py`
+4. Run the test suite: `pytest tests/ -v`
+5. Submit a pull request with a clear description of the change
+
+---
+
 ### Roadmap
 
 #### Phase 1 — UMNIK Year 1
@@ -229,7 +263,7 @@ If you use In Silico BBB in your research, please cite:
 
 ```
 In Silico BBB — Mechanistic BBB Transport Simulator (2024).
-GitHub: https://github.com/<your-username>/In-Silico-BBB
+GitHub: https://github.com/learning2think/In-Silico-BBB
 Supported by UMNIK programme, Innovation Promotion Fund (Фонд содействия инновациям).
 ```
 
@@ -248,6 +282,17 @@ Supported by UMNIK programme, Innovation Promotion Fund (Фонд содейст
 
 ---
 
+### Быстрый старт
+
+```bash
+git clone https://github.com/learning2think/In-Silico-BBB.git
+cd In-Silico-BBB
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+---
+
 ### Функциональность
 
 | Возможность | Описание |
@@ -257,10 +302,10 @@ Supported by UMNIK programme, Innovation Promotion Fund (Фонд содейст
 | **Поправка на белки** | Слайдеры fu_plasma и fu_brain; истинный Kp,uu = (C_brain·fu_brain)/(C_blood·fu_plasma) |
 | **Системный клиренс** | Параметр k_elim переключает режим из in vitro (закрытая система) в in vivo |
 | **Анализ чувствительности** | Веерный график по k_pass, Vmax или Km с выбором компартмента |
-| **Сравнение веществ** | Ранжирующая таблица по Kp,uu для всех 7 веществ при одинаковых условиях |
+| **Сравнение веществ** | Кэшированная ранжирующая таблица по Kp,uu для всех 7 веществ при одинаковых условиях |
 | **Экспорт** | CSV с метаданными и заголовком + PNG-график (150 dpi) |
 | **Реестр веществ** | 7 соединений с верифицированными параметрами и значениями fu |
-| **Интерактивный UI** | Streamlit-приложение, не требует программирования |
+| **Интерактивный UI** | Streamlit + Plotly, не требует программирования |
 | **Автотесты** | 17 pytest-тестов: физика модели, P-gp, все 7 веществ |
 
 ---
@@ -322,6 +367,13 @@ dC_brain/dt =  (V_blood/V_brain) × J_diff − J_pgp
 ```
 In-Silico-BBB/
 │
+├── app.py                        # Точка входа Streamlit
+├── requirements.txt
+├── README.md
+│
+├── assets/
+│   └── theme.css                 # CSS-токены и стили компонентов
+│
 ├── bbb/                          # Основной Python-пакет
 │   ├── core/
 │   │   ├── model.py              # Правые части ОДУ (bbb_ode)
@@ -329,14 +381,10 @@ In-Silico-BBB/
 │   ├── data/
 │   │   └── substances.py         # Датакласс Substance + реестр SUBSTANCES (7 веществ)
 │   └── visualization/
-│       └── plots.py              # plot_concentrations() · plot_parameter_sensitivity()
+│       └── plots.py              # Matplotlib (PNG) + Plotly (интерактив)
 │
-├── tests/
-│   └── test_simulator.py         # 17 pytest-тестов
-│
-├── app.py                        # Точка входа Streamlit
-├── requirements.txt
-└── README.md
+└── tests/
+    └── test_simulator.py         # 17 pytest-тестов
 ```
 
 ---
@@ -347,7 +395,7 @@ In-Silico-BBB/
 
 ```bash
 # 1. Клонировать репозиторий
-git clone https://github.com/<your-username>/In-Silico-BBB.git
+git clone https://github.com/learning2think/In-Silico-BBB.git
 cd In-Silico-BBB
 
 # 2. Создать и активировать виртуальное окружение
@@ -401,21 +449,29 @@ pytest tests/ -v
 
 #### Добавление нового вещества
 
-Отредактируйте `bbb/data/substances.py`:
-
 ```python
 SUBSTANCES["МоёВещество"] = Substance(
     name="МоёВещество",
     k_pass=0.4,      # пассивная проницаемость [1/ч]
     vmax=1.2,        # Vmax P-gp [мкМ/ч]
     km=15.0,         # Km P-gp [мкМ]
-    fu_plasma=0.30,  # свободная фракция в плазме
-    fu_brain=0.15,   # свободная фракция в ткани мозга
+    fu_plasma=0.30,
+    fu_brain=0.15,
     color="#9C27B0",
-    description="Краткое описание вещества.",
+    description="Краткое описание.",
     reference="Автор, журнал, год.",
 )
 ```
+
+---
+
+### Участие в разработке
+
+1. Форкнуть репозиторий
+2. Создать ветку: `git checkout -b feature/my-feature`
+3. Добавить тесты в `tests/test_simulator.py`
+4. Запустить: `pytest tests/ -v`
+5. Создать pull request с описанием изменений
 
 ---
 
@@ -433,7 +489,55 @@ SUBSTANCES["МоёВещество"] = Substance(
 
 #### Долгосрочная перспектива
 - [ ] Интеграция с платформами молекулярного докинга (AutoDock, Glide)
-- [ ] Персонализированная PBPK-параметризация на основе клинических PK-данных пациента
+- [ ] Персонализированная PBPK-параметризация на основе клинических PK-данных
+
+---
+
+### Development
+
+#### Требования
+
+```bash
+pip install -r requirements.txt
+pip install pre-commit ruff mypy pytest-cov playwright
+playwright install chromium
+```
+
+#### Pre-commit hooks (однократно)
+
+```bash
+pre-commit install
+pre-commit run --all-files   # первый прогон по всему репозиторию
+```
+
+#### Линтинг и форматирование
+
+```bash
+ruff check .                 # линтер
+ruff check . --fix           # авто-исправление
+ruff format .                # форматирование (Black-совместимое)
+```
+
+#### Статическая типизация
+
+```bash
+mypy bbb/                    # только пакет bbb/, не app.py
+```
+
+#### Тесты с покрытием
+
+```bash
+pytest tests/ -v --tb=short
+pytest tests/ --cov=bbb --cov-report=html   # HTML-отчёт в htmlcov/
+```
+
+#### Скриншот приложения
+
+```bash
+streamlit run app.py --server.headless true &
+sleep 5
+python scripts/screenshot.py   # сохраняет docs/screenshot.png
+```
 
 ---
 
@@ -445,11 +549,9 @@ MIT — подробности в файле [LICENSE](LICENSE).
 
 ### Цитирование
 
-Если вы используете In Silico BBB в своей работе, пожалуйста, укажите ссылку:
-
 ```
 In Silico BBB — Mechanistic BBB Transport Simulator (2024).
-GitHub: https://github.com/<your-username>/In-Silico-BBB
+GitHub: https://github.com/learning2think/In-Silico-BBB
 Поддержано программой УМНИК, Фонд содействия инновациям.
 ```
 

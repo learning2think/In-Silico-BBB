@@ -69,14 +69,14 @@ class Substance:
     """
 
     name: str
-    k_pass: float           # [1/ч]
-    vmax: float             # [мкМ/ч]
-    km: float               # [мкМ]
+    k_pass: float  # [1/ч]
+    vmax: float  # [мкМ/ч]
+    km: float  # [мкМ]
     color: str = "#1f77b4"
     description: str = ""
     reference: str = ""
     fu_plasma: float = 1.0  # свободная фракция в плазме (0–1)
-    fu_brain: float = 1.0   # свободная фракция в ткани мозга (0–1)
+    fu_brain: float = 1.0  # свободная фракция в ткани мозга (0–1)
 
 
 # ---------------------------------------------------------------------------
@@ -96,8 +96,8 @@ SUBSTANCES: dict[str, Substance] = {
             "Слабый субстрат P-гликопротеина."
         ),
         reference="Hammarlund-Udenaes et al., Drug Metab. Dispos., 2008.",
-        fu_plasma=0.01,   # ~99% связан с альбумином плазмы
-        fu_brain=0.03,    # высокое связывание с белками мозговой ткани
+        fu_plasma=0.01,  # ~99% связан с альбумином плазмы
+        fu_brain=0.03,  # высокое связывание с белками мозговой ткани
     ),
     "Верапамил": Substance(
         name="Верапамил",
@@ -111,14 +111,14 @@ SUBSTANCES: dict[str, Substance] = {
             "ограничивает накопление в ткани мозга."
         ),
         reference="Choo et al., Br. J. Pharmacol., 2006.",
-        fu_plasma=0.10,   # ~90% связывания с белками плазмы
+        fu_plasma=0.10,  # ~90% связывания с белками плазмы
         fu_brain=0.10,
     ),
     "Декстран": Substance(
         name="Декстран",
         k_pass=0.008,
         vmax=0.0,
-        km=1.0,       # формальный параметр, не влияет при vmax=0
+        km=1.0,  # формальный параметр, не влияет при vmax=0
         color="#4CAF50",
         description=(
             "Полисахарид с высокой молекулярной массой (>10 кДа). "
@@ -126,7 +126,7 @@ SUBSTANCES: dict[str, Substance] = {
             "Используется как маркер нарушения целостности барьера."
         ),
         reference="Hawkins & Davis, Pharmacol. Rev., 2005.",
-        fu_plasma=1.0,    # не связывается с белками плазмы
+        fu_plasma=1.0,  # не связывается с белками плазмы
         fu_brain=1.0,
     ),
     "Кофеин": Substance(
@@ -141,7 +141,7 @@ SUBSTANCES: dict[str, Substance] = {
             "Практически не является субстратом P-gp."
         ),
         reference="Fredholm et al., Pharmacol. Rev., 1999.",
-        fu_plasma=0.65,   # слабое связывание с белками
+        fu_plasma=0.65,  # слабое связывание с белками
         fu_brain=0.80,
     ),
     "Морфин": Substance(
@@ -156,7 +156,7 @@ SUBSTANCES: dict[str, Substance] = {
             "накопление в ткани мозга. Kp,uu ≈ 0.3–0.4 у грызунов."
         ),
         reference="Groenendaal et al., Drug Metab. Dispos., 2007.",
-        fu_plasma=0.65,   # умеренное связывание с белками плазмы
+        fu_plasma=0.65,  # умеренное связывание с белками плазмы
         fu_brain=0.70,
     ),
     "Донепезил": Substance(
@@ -171,14 +171,14 @@ SUBSTANCES: dict[str, Substance] = {
             "через ГЭБ. Слабый субстрат P-gp."
         ),
         reference="Tiseo et al., Clin. Pharmacokinet., 1998.",
-        fu_plasma=0.05,   # ~95% связан с α1-кислым гликопротеином и альбумином
+        fu_plasma=0.05,  # ~95% связан с α1-кислым гликопротеином и альбумином
         fu_brain=0.12,
     ),
     "Леветирацетам": Substance(
         name="Леветирацетам",
         k_pass=0.25,
         vmax=0.0,
-        km=1.0,       # формальный параметр, не влияет при vmax=0
+        km=1.0,  # формальный параметр, не влияет при vmax=0
         color="#8BC34A",
         description=(
             "Противоэпилептический препарат. Гидрофильная малая молекула "
@@ -186,7 +186,7 @@ SUBSTANCES: dict[str, Substance] = {
             "проникает через ГЭБ по механизму пассивной диффузии."
         ),
         reference="Potschka et al., Epilepsia, 2004.",
-        fu_plasma=0.90,   # минимальное связывание с белками (<10%)
+        fu_plasma=0.90,  # минимальное связывание с белками (<10%)
         fu_brain=0.85,
     ),
 }

@@ -31,6 +31,7 @@
 Численное интегрирование реализовано в bbb.core.simulator.Simulator.
 """
 
+
 def bbb_ode(
     t: float,
     y: list[float],

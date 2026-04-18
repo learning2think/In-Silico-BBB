@@ -1,0 +1,232 @@
+/* ============================================================
+   In Silico BBB — Design System
+   Загружается из app.py через _inject_css()
+   ============================================================ */
+
+/* ── Design tokens ─────────────────────────────────────────── */
+:root {
+  --color-primary:      #2563EB;
+  --color-primary-dk:   #1D4ED8;
+  --color-primary-glow: rgba(37, 99, 235, 0.30);
+  --color-navy:         #1A2B4A;
+  --color-navy-mid:     #162340;
+  --color-navy-border:  #2A3F61;
+
+  --color-bg:           #ECF1FA;
+  --color-surface:      #FFFFFF;
+  --color-border:       #C7D8F0;
+  --color-border-light: #E2E8F0;
+
+  --color-text:         #1E293B;
+  --color-text-muted:   #6B7280;
+  --color-text-sub:     #374151;
+
+  --color-success:      #16A34A;
+  --color-warning:      #EA580C;
+  --color-danger:       #DC2626;
+
+  --radius-card:   12px;
+  --radius-sm:      8px;
+  --radius-xs:      7px;
+  --radius-pill:   20px;
+
+  --shadow-card:    0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-card-md: 0 3px 14px rgba(37, 99, 235, 0.11);
+  --shadow-btn:     0 3px 12px rgba(37, 99, 235, 0.38);
+  --shadow-btn-hov: 0 5px 18px rgba(37, 99, 235, 0.55);
+
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+}
+
+/* ── App background ──────────────────────────────────────────── */
+.stApp {
+  background-color: var(--color-bg);
+  font-family: var(--font-ui);
+}
+
+/* ── Sidebar — deep navy ─────────────────────────────────────── */
+section[data-testid="stSidebar"] > div:first-child {
+  background: linear-gradient(180deg, var(--color-navy) 0%, var(--color-navy-mid) 100%);
+  border-right: 1px solid var(--color-navy-border);
+}
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+  color: #B8CCE0 !important;
+  font-size: 0.85rem !important;
+}
+section[data-testid="stSidebar"] hr {
+  border-color: var(--color-navy-border) !important;
+  opacity: 1 !important;
+}
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+  color: #D1DCE8 !important;
+}
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] strong {
+  color: #F0F6FF !important;
+}
+
+/* ── Metric cards ────────────────────────────────────────────── */
+[data-testid="stMetric"] {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: 3px solid var(--color-primary);
+  border-radius: var(--radius-card);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-card-md);
+}
+[data-testid="stMetricLabel"] > div {
+  color: var(--color-text-sub) !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+}
+[data-testid="stMetricValue"] > div {
+  color: var(--color-navy) !important;
+  font-weight: 700 !important;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+  background: var(--color-surface);
+  border-radius: 10px;
+  padding: 4px;
+  gap: 2px;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.07);
+  margin-bottom: 0.6rem;
+}
+.stTabs [data-baseweb="tab"] {
+  border-radius: var(--radius-xs);
+  color: var(--color-text-sub) !important;
+  font-weight: 500;
+  padding: 0.4rem 1rem;
+  font-family: var(--font-ui);
+}
+.stTabs [aria-selected="true"][data-baseweb="tab"] {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dk)) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px var(--color-primary-glow) !important;
+}
+
+/* ── Primary buttons ─────────────────────────────────────────── */
+[data-testid="baseButton-primary"] {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dk)) !important;
+  border: none !important;
+  box-shadow: var(--shadow-btn) !important;
+  font-weight: 600 !important;
+  border-radius: var(--radius-sm) !important;
+  letter-spacing: 0.02em !important;
+  font-family: var(--font-ui) !important;
+  transition: box-shadow 0.15s ease, transform 0.1s ease !important;
+}
+[data-testid="baseButton-primary"]:hover {
+  box-shadow: var(--shadow-btn-hov) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ── Secondary / download buttons ───────────────────────────── */
+[data-testid="baseButton-secondary"] {
+  border-radius: var(--radius-sm) !important;
+  font-family: var(--font-ui) !important;
+}
+
+/* ── Tab panel — white card ─────────────────────────────────── */
+[role="tabpanel"] {
+  background: var(--color-surface);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  padding: 1.4rem 1.6rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-top: none;
+  margin-top: -3px;
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Chart wrapper card ──────────────────────────────────────── */
+.chart-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  padding: 1rem;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border-light);
+}
+
+/* ── Markdown — main content ─────────────────────────────────── */
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li {
+  color: var(--color-text);
+  font-family: var(--font-ui);
+}
+[data-testid="stMarkdownContainer"] td,
+[data-testid="stMarkdownContainer"] th {
+  color: var(--color-text) !important;
+  font-family: var(--font-ui);
+}
+[data-testid="stMarkdownContainer"] th {
+  background: #EEF2FF !important;
+  font-weight: 600 !important;
+}
+[data-testid="stMarkdownContainer"] h2,
+[data-testid="stMarkdownContainer"] h3,
+[data-testid="stMarkdownContainer"] h4 {
+  color: var(--color-navy);
+  font-family: var(--font-ui);
+}
+[data-testid="stMarkdownContainer"] strong {
+  color: var(--color-navy);
+}
+[data-testid="stMarkdownContainer"] code {
+  color: var(--color-primary-dk);
+  background: #EEF2FF;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+
+/* ── KaTeX math ──────────────────────────────────────────────── */
+.katex { color: var(--color-text) !important; }
+
+/* ── Alert / info boxes ──────────────────────────────────────── */
+[data-testid="stAlertContainer"] p {
+  color: var(--color-text) !important;
+}
+
+/* ── Caption ─────────────────────────────────────────────────── */
+[data-testid="stCaptionContainer"] p {
+  color: var(--color-text-muted) !important;
+  font-size: 0.82rem !important;
+}
+
+/* ── Мелкий текст — светлая тема ────────────────────────────── */
+.stCaption p, small {
+  color: rgba(0, 0, 0, 0.65) !important;
+}
+.stTooltipIcon {
+  color: rgba(0, 0, 0, 0.55) !important;
+}
+section[data-testid="stSidebar"] small,
+section[data-testid="stSidebar"] .stCaption p {
+  color: rgba(255, 255, 255, 0.70) !important;
+}
+[data-testid="stMetricLabel"] {
+  color: rgba(0, 0, 0, 0.75) !important;
+}
+[data-testid="stMetricDelta"] {
+  color: rgba(0, 0, 0, 0.65) !important;
+}
+.streamlit-expanderHeader p {
+  color: rgba(0, 0, 0, 0.80) !important;
+  font-weight: 500;
+}
+
+/* ── Dataframe ───────────────────────────────────────────────── */
+[data-testid="stDataFrame"] {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+/* ── Plotly chart container — прозрачный фон ────────────────── */
+.js-plotly-plot .plotly,
+.js-plotly-plot .plotly .svg-container {
+  background: transparent !important;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+footer { visibility: hidden; }
