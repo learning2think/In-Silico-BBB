@@ -20,10 +20,6 @@
 </div>
 
 > **Screenshot / GIF**
-> *Add a screenshot or screen recording here:*
-> `docs/screenshot.png` — run `streamlit run app.py`, capture the Results tab, save to `docs/`
-> Then replace this block with: `![App screenshot](docs/screenshot.png)`
-
 ---
 
 ## 🇬🇧 English
